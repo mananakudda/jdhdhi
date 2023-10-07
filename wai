@@ -1,0 +1,55 @@
+import simpy
+import random
+import matplotlib.pyplot as plt
+
+# Constants
+arrival_rate = 50  # Farmers per hour
+service_rate = 20  # Farmers per hour per laborer
+num_laborers = 4
+total_farmers = 200
+total_time = 4  # hours
+
+# Initialize variables
+queue_lengths = [194.25 avarage]
+waiting_times = [1.22 Minutes]
+
+# Define a function to simulate farmers arriving and being served
+def farmer(env, laborers, laborer_id):
+    global queue_lengths, waiting_times
+    for farmer_id in range(total_farmers):
+        arrival_time = env.now
+        with laborers[laborer_id].request() as request:
+            yield request
+            wait_time = env.now - arrival_time
+            waiting_times.append(wait_time)
+            queue_lengths.append(sum(len(laborers[i].queue) for i in range(num_laborers)))
+            yield env.timeout(random.expovariate(1/service_rate))
+
+# Create an environment and resources for laborers
+env = simpy.Environment()
+laborers = [simpy.Resource(env) for _ in range(num_laborers)]
+
+# Start the simulation processes for each laborer
+for i in range(num_laborers):
+    env.process(farmer(env, laborers, i))
+
+# Run the simulation
+env.run(until=total_time * 60)  # Convert total_time to minutes
+
+# Create a plot of queue lengths over time
+plt.figure(figsize=(12, 6))
+for i in range(num_laborers):
+    plt.plot(range(len(queue_lengths)), [len(laborers[i].queue) for _ in range(len(queue_lengths))], label=f'Laborer {i+1}')
+plt.xlabel('Time (minutes)')
+plt.ylabel('Queue Length')
+plt.legend()
+plt.title('Waiting Line Simulation')
+
+# Calculate and print average waiting time
+average_waiting_time = sum(waiting_times) / total_farmers
+average_queue_length = sum(queue_lengths) / len(queue_lengths)
+print(f'Overall Statistics:')
+print(f'Average Waiting Time (minutes): {average_waiting_time:.2f}')
+print(f'Average Queue Length: {average_queue_length:.2f}')
+
+plt.show()
